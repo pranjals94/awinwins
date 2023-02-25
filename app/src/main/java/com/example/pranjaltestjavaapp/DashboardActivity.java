@@ -74,7 +74,7 @@ public class DashboardActivity extends AppCompatActivity {
         super.onDestroy();
         stopService(intent);
     }
-//testing -------------github change
+
     Toast t;
     public void makeToast(String msg){
         if (t!=null)

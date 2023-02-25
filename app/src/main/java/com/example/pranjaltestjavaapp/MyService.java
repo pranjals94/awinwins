@@ -47,14 +47,12 @@ public class MyService extends Service {
         }
     };
 
-    String token ="";
+    String token;
     private final Handler mHandler = new Handler();
     private static final String CHANNEL_ID = "My Channel";
 
     private final OkHttpClient client = new OkHttpClient();
     Gson gson =new Gson();
-
-
 
     OkHttpClient client1 = client.newBuilder()
             .readTimeout(2000, TimeUnit.MILLISECONDS)
@@ -80,7 +78,7 @@ public class MyService extends Service {
                 setSmallIcon(R.drawable.ic_baseline_miscellaneous_services_24)
                 .setContentTitle("Awinwins service running in background")
                 .setContentText("Mendetory notification for Forground services. Android 12(API-31) and Later.")
-                .setContentIntent(pendingIntent)
+//                .setContentIntent(pendingIntent) //makes opening the app possible on clicking the notification.(app reopens with initial states)
                 .build();
         startForeground(1,notification);
 
@@ -107,53 +105,62 @@ public class MyService extends Service {
     private final Runnable getGameHistory = new Runnable() {
         @Override
         public void run() {
+                Request request = new Request.Builder()
+                        .addHeader("token", token)
+                        .url(url)
+                        .post(formBody)
+                        .build();
 
-            Request request = new Request.Builder()
-                    .addHeader("token",token)
-                    .url(url)
-                    .post(formBody)
-                    .build();
-
-            client1.newCall(request).enqueue(new Callback() { //enqueue makes to run on a different thread
-                @Override
-                public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                client1.newCall(request).enqueue(new Callback() { //enqueue makes to run on a different thread
+                    @Override
+                    public void onFailure(@NonNull Call call, @NonNull IOException e) {
 //                    e.printStackTrace();
 //                    System.out.println("error");
-                    ShowNotification("HTTP Failure !", "Check internet Connectivity !",R.drawable.ic_baseline_add_alert_24);
+                        ShowNotification("HTTP Failure !", "Check internet Connectivity !", R.drawable.ic_baseline_add_alert_24);
 //                    stopSelf();
-                    mHandler.postDelayed(getGameHistory,50000); //keep looping network may come
-                }
+                        mHandler.postDelayed(getGameHistory, 50000); //keep looping network may come
+                    }
 
-                @Override
-                public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                    if(response.isSuccessful()){ // triggers only if status code is less than 300
-                        String responseBody = response.body().string();
+                    @Override
+                    public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                        if (response.isSuccessful()) { // triggers only if status code is less than 300
+                            String responseBody = response.body().string();
 //                            System.out.println(responseBody);
 //                           test data = gson.fromJson("{\"body\":\"John\", \"age\":30, \"car\":null}", test.class);
-                        gameHistorySchema gameHistorydata = gson.fromJson(responseBody, gameHistorySchema.class);
+                            gameHistorySchema gameHistorydata = gson.fromJson(responseBody, gameHistorySchema.class);
                             List<listMap> gameData = gameHistorydata.data.list;
-                            int red=0,green=0;
-                            for (int i = gameData.size()-1; i > 0; i--) {
+                            int red = 0, green = 0;
+                            for (int i = gameData.size() - 1; i > 0; i--) {
                                 String[] arrOfStr = gameData.get(i).color.split(",", 2);
 //                                System.out.println(gameData.get(i).color);
                                 System.out.println(arrOfStr[0]);
                                 System.out.println(gameData.get(i).sn);
-                                if (Objects.equals(arrOfStr[0], "red")){red++;green=0;}
-                                if (Objects.equals(arrOfStr[0], "green")){green++;red=0;}
+                                if (Objects.equals(arrOfStr[0], "red")) {
+                                    red++;
+                                    green = 0;
+                                }
+                                if (Objects.equals(arrOfStr[0], "green")) {
+                                    green++;
+                                    red = 0;
+                                }
                             }
 //                        System.out.println(red);
 //                        System.out.println(green);
-                            if (red>5){ShowNotification("Color Is Red !", "Red greater than 5", R.drawable.ic_baseline_attach_money_24);}
-                            if (green>5){ShowNotification("Color Is green !", "Green greater than 5", R.drawable.ic_baseline_attach_money_24);}
-                            mHandler.postDelayed(getGameHistory,50000);//trigger after 50 Secs
-                    }else{
-                        System.out.println("Error in authentication");
-                        ShowNotification("Not Authenticated !", "Please Close the App and LogIn Again !",R.drawable.ic_baseline_add_alert_24);
-                        stopForeground(true);
-                        stopSelf(); //self stop service
+                            if (red > 5) {
+                                ShowNotification("Color Is Red !", "Red greater than 5", R.drawable.ic_baseline_attach_money_24);
+                            }
+                            if (green > 5) {
+                                ShowNotification("Color Is green !", "Green greater than 5", R.drawable.ic_baseline_attach_money_24);
+                            }
+                            mHandler.postDelayed(getGameHistory, 50000);//trigger after 50 Secs
+                        } else {
+                            System.out.println("Error in authentication");
+                            ShowNotification("Not Authenticated !", "Please Close the App and LogIn Again !", R.drawable.ic_baseline_add_alert_24);
+                            stopForeground(true);
+                            stopSelf(); //self stop service
+                        }
                     }
-                }
-            });
+                });
         }
     };
 
